@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#6c63ff"/>
+  <g fill="white">
+    <!-- Hantel links -->
+    <rect x="40" y="220" width="60" height="72" rx="12"/>
+    <rect x="80" y="234" width="100" height="44" rx="8"/>
+    <!-- Stange -->
+    <rect x="176" y="244" width="160" height="24" rx="4"/>
+    <!-- Hantel rechts -->
+    <rect x="332" y="234" width="100" height="44" rx="8"/>
+    <rect x="412" y="220" width="60" height="72" rx="12"/>
+    <!-- Aufwärts-Pfeil (KPI) -->
+    <path d="M256 120 L290 160 H265 V190 H247 V160 H222 Z"/>
+    <!-- Zahl / Balken -->
+    <rect x="200" y="340" width="30" height="50" rx="4"/>
+    <rect x="241" y="320" width="30" height="70" rx="4"/>
+    <rect x="282" y="300" width="30" height="90" rx="4"/>
+  </g>
+</svg>

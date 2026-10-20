@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#6c63ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Workout">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>Workout Tracker</title>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== VIEW: DASHBOARD ===== -->
+    <div id="view-dashboard" class="view active">
+      <header class="topbar">
+        <h1>Dashboard</h1>
+        <span id="dashboard-date" class="topbar-sub"></span>
+      </header>
+      <main class="view-content">
+        <section class="kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">Diese Woche</span>
+            <span class="kpi-value" id="kpi-week-count">0</span>
+            <span class="kpi-unit">Trainings</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Gesamt</span>
+            <span class="kpi-value" id="kpi-total-count">0</span>
+            <span class="kpi-unit">Sessions</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Aktueller Streak</span>
+            <span class="kpi-value" id="kpi-streak">0</span>
+            <span class="kpi-unit">Tage</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Übungen</span>
+            <span class="kpi-value" id="kpi-exercises">0</span>
+            <span class="kpi-unit">Gesamt</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-header">
+            <h2>Letzte Sessions</h2>
+            <button class="btn-text" onclick="App.navigate('history')">Alle</button>
+          </div>
+          <div id="dashboard-recent" class="session-list"></div>
+        </section>
+
+        <button class="fab" onclick="App.navigate('log')">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </button>
+      </main>
+    </div>
+
+    <!-- ===== VIEW: SESSION LOGGEN ===== -->
+    <div id="view-log" class="view">
+      <header class="topbar">
+        <button class="topbar-back" onclick="App.navigate('dashboard')">
+          <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <h1>Training loggen</h1>
+      </header>
+      <main class="view-content">
+        <div class="form-group">
+          <label>Datum & Uhrzeit</label>
+          <input type="datetime-local" id="log-datetime">
+        </div>
+
+        <div class="form-group">
+          <label>Startpunkt</label>
+          <div class="segment-control">
+            <button class="segment active" id="seg-plan" onclick="App.log.switchMode('plan')">Trainingsplan</button>
+            <button class="segment" id="seg-free" onclick="App.log.switchMode('free')">Freie Session</button>
+          </div>
+        </div>
+
+        <div id="log-plan-select" class="form-group">
+          <label>Plan wählen</label>
+          <select id="log-plan-id" onchange="App.log.onPlanSelect()">
+            <option value="">– Plan wählen –</option>
+          </select>
+        </div>
+
+        <div id="log-exercises-container">
+          <div class="section-header">
+            <h2>Übungen</h2>
+            <button class="btn-text" onclick="App.log.addExercise()">+ Übung hinzufügen</button>
+          </div>
+          <div id="log-exercises"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Notiz (optional)</label>
+          <textarea id="log-note" rows="2" placeholder="z.B. Müde, aber gut..."></textarea>
+        </div>
+
+        <button class="btn-primary full-width" onclick="App.log.save()">Session speichern</button>
+      </main>
+    </div>
+
+    <!-- ===== VIEW: VERLAUF ===== -->
+    <div id="view-history" class="view">
+      <header class="topbar">
+        <h1>Verlauf</h1>
+      </header>
+      <main class="view-content">
+        <div id="history-list" class="session-list"></div>
+        <p id="history-empty" class="empty-state" style="display:none">Noch keine Sessions gespeichert.</p>
+      </main>
+    </div>
+
+    <!-- ===== VIEW: ÜBUNGEN / KPIs ===== -->
+    <div id="view-exercises" class="view">
+      <header class="topbar">
+        <h1>Übungen & KPIs</h1>
+      </header>
+      <main class="view-content">
+        <div class="form-group">
+          <input type="search" id="exercise-search" placeholder="Übung suchen..." oninput="App.exercises.filter(this.value)">
+        </div>
+        <div id="exercise-list"></div>
+        <p id="exercise-empty" class="empty-state" style="display:none">Noch keine Übungen eingetragen.</p>
+      </main>
+    </div>
+
+    <!-- ===== VIEW: ÜBUNGSDETAIL ===== -->
+    <div id="view-exercise-detail" class="view">
+      <header class="topbar">
+        <button class="topbar-back" id="exercise-detail-back">
+          <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <h1 id="exercise-detail-name"></h1>
+      </header>
+      <main class="view-content">
+        <section class="kpi-grid three-col">
+          <div class="kpi-card accent-green">
+            <span class="kpi-label">Bestleistung</span>
+            <span class="kpi-value" id="detail-pb">–</span>
+            <span class="kpi-unit">kg</span>
+          </div>
+          <div class="kpi-card accent-yellow">
+            <span class="kpi-label">Steigerung</span>
+            <span class="kpi-value" id="detail-progress">–</span>
+            <span class="kpi-unit">%</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Sessions</span>
+            <span class="kpi-value" id="detail-sessions">0</span>
+            <span class="kpi-unit">Einträge</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Gewichtsverlauf</h2>
+          <div class="chart-wrapper">
+            <canvas id="detail-chart"></canvas>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Verlauf</h2>
+          <div id="detail-history"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ===== VIEW: PLÄNE ===== -->
+    <div id="view-plans" class="view">
+      <header class="topbar">
+        <h1>Trainingspläne</h1>
+        <button class="topbar-action" onclick="App.plans.openForm()">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </button>
+      </header>
+      <main class="view-content">
+        <div id="plans-list"></div>
+        <p id="plans-empty" class="empty-state" style="display:none">Noch keine Trainingspläne angelegt.</p>
+      </main>
+    </div>
+
+    <!-- ===== MODAL: SESSION DETAIL ===== -->
+    <div id="modal-session" class="modal" onclick="App.modal.closeOnBackdrop(event)">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="modal-session-title"></h2>
+          <button class="modal-close" onclick="App.modal.close()">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div id="modal-session-body" class="modal-body"></div>
+        <div class="modal-footer">
+          <button class="btn-danger" id="modal-session-delete">Löschen</button>
+          <button class="btn-primary" id="modal-session-edit">Bearbeiten</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MODAL: PLAN FORM ===== -->
+    <div id="modal-plan" class="modal" onclick="App.modal.closeOnBackdrop(event)">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="modal-plan-title">Plan erstellen</h2>
+          <button class="modal-close" onclick="App.modal.close()">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="plan-form-id">
+          <div class="form-group">
+            <label>Plan-Name</label>
+            <input type="text" id="plan-form-name" placeholder="z.B. Push A, Leg Day...">
+          </div>
+          <div class="form-group">
+            <div class="section-header">
+              <label>Übungen</label>
+              <button class="btn-text" onclick="App.plans.addExerciseRow()">+ Hinzufügen</button>
+            </div>
+            <div id="plan-form-exercises"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="App.modal.close()">Abbrechen</button>
+          <button class="btn-primary" onclick="App.plans.save()">Speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ===== BOTTOM NAVIGATION ===== -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-view="dashboard" onclick="App.navigate('dashboard')">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="log" onclick="App.navigate('log')">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        <span>Loggen</span>
+      </button>
+      <button class="nav-item" data-view="history" onclick="App.navigate('history')">
+        <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        <span>Verlauf</span>
+      </button>
+      <button class="nav-item" data-view="exercises" onclick="App.navigate('exercises')">
+        <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z"/></svg>
+        <span>Übungen</span>
+      </button>
+      <button class="nav-item" data-view="plans" onclick="App.navigate('plans')">
+        <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
+        <span>Pläne</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
