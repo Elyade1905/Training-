@@ -21,6 +21,12 @@ function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
+function localDateStr(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
 function fmtDate(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -81,13 +87,15 @@ function progressPercent(history) {
 function weekStreak() {
   const db = DB.get();
   if (!db.sessions.length) return 0;
-  const days = new Set(db.sessions.map(s => s.date.slice(0, 10)));
+  const days = new Set(db.sessions.map(s => localDateStr(s.date)));
   let streak = 0;
   const today = new Date();
   for (let i = 0; i < 365; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    if (days.has(d.toISOString().slice(0, 10))) streak++;
+    const pad = n => String(n).padStart(2, '0');
+    const str = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    if (days.has(str)) streak++;
     else if (i > 0) break;
   }
   return streak;
@@ -162,6 +170,92 @@ const App = {
     modalCtrl.close();
   },
 
+  // ===== CALENDAR =====
+  calendar: {
+    _year: new Date().getFullYear(),
+    _month: new Date().getMonth(),
+    _selected: null,
+
+    prev() {
+      if (this._month === 0) { this._month = 11; this._year--; }
+      else this._month--;
+      this._selected = null;
+      this.render();
+    },
+
+    next() {
+      if (this._month === 11) { this._month = 0; this._year++; }
+      else this._month++;
+      this._selected = null;
+      this.render();
+    },
+
+    render() {
+      const db = DB.get();
+      const today = new Date();
+      const y = this._year, m = this._month;
+
+      document.getElementById('cal-month-label').textContent =
+        new Date(y, m, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+      // Build set of trained day strings "YYYY-MM-DD"
+      const trainedDays = new Set();
+      db.sessions.forEach(s => trainedDays.add(localDateStr(s.date)));
+
+      const firstDow = new Date(y, m, 1).getDay(); // 0=Sun
+      // Shift so Monday=0
+      const startOffset = (firstDow + 6) % 7;
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const todayStr = localDateStr(new Date().toISOString());
+
+      const dow = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+      let html = dow.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+      // Empty cells before first day
+      for (let i = 0; i < startOffset; i++) html += `<div class="cal-day empty"></div>`;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = dateStr === todayStr;
+        const isTrained = trainedDays.has(dateStr);
+        const isSelected = dateStr === this._selected;
+        const classes = ['cal-day',
+          isTrained ? 'trained' : '',
+          isToday ? 'today' : '',
+          isSelected ? 'selected' : ''
+        ].filter(Boolean).join(' ');
+        html += `<div class="${classes}" onclick="App.calendar.selectDay('${dateStr}')">${d}</div>`;
+      }
+
+      document.getElementById('cal-grid').innerHTML = html;
+
+      // Show sessions for selected day if any
+      if (this._selected) this._showDaySessions(this._selected);
+    },
+
+    selectDay(dateStr) {
+      const db = DB.get();
+      const sessions = db.sessions.filter(s => localDateStr(s.date) === dateStr);
+      if (!sessions.length) return;
+      this._selected = dateStr;
+      this.render();
+    },
+
+    _showDaySessions(dateStr) {
+      const db = DB.get();
+      const sessions = db.sessions.filter(s => localDateStr(s.date) === dateStr);
+      const container = document.getElementById('dashboard-recent');
+      if (!sessions.length) return;
+      const sorted = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+      container.innerHTML = `
+        <p style="font-size:0.8rem;color:var(--text2);margin-bottom:8px">
+          ${new Date(dateStr).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
+        ${sorted.map(s => renderSessionCard(s, db)).join('')}
+      `;
+    }
+  },
+
   // ===== DASHBOARD =====
   dashboard: {
     render() {
@@ -172,6 +266,8 @@ const App = {
       document.getElementById('kpi-total-count').textContent = db.sessions.length;
       document.getElementById('kpi-streak').textContent = weekStreak();
       document.getElementById('kpi-exercises').textContent = getExerciseNames().length;
+
+      App.calendar.render();
 
       const recent = [...db.sessions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
       const container = document.getElementById('dashboard-recent');
@@ -642,6 +738,17 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
+}
+
+// ===== iOS KEYBOARD FIX =====
+// On iOS, the virtual keyboard doesn't shrink the viewport properly.
+// visualViewport gives the actual visible height, so we sync #app to it.
+if (window.visualViewport) {
+  const onViewportResize = () => {
+    document.getElementById('app').style.height = window.visualViewport.height + 'px';
+  };
+  window.visualViewport.addEventListener('resize', onViewportResize);
+  window.visualViewport.addEventListener('scroll', onViewportResize);
 }
 
 // ===== INIT =====

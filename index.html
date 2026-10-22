@@ -47,6 +47,21 @@
 
         <section class="section">
           <div class="section-header">
+            <h2 id="cal-month-label"></h2>
+            <div style="display:flex;gap:4px">
+              <button class="btn-icon" onclick="App.calendar.prev()">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+              </button>
+              <button class="btn-icon" onclick="App.calendar.next()">
+                <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="cal-grid" class="cal-grid"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-header">
             <h2>Letzte Sessions</h2>
             <button class="btn-text" onclick="App.navigate('history')">Alle</button>
           </div>
@@ -101,7 +116,9 @@
           <textarea id="log-note" rows="2" placeholder="z.B. Müde, aber gut..."></textarea>
         </div>
 
-        <button class="btn-primary full-width" onclick="App.log.save()">Session speichern</button>
+        <div class="log-save-bar">
+          <button class="btn-primary full-width" onclick="App.log.save()">Session speichern</button>
+        </div>
       </main>
     </div>
 

@@ -37,6 +37,10 @@ html, body {
   color: var(--text);
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+  /* Prevent iOS from scrolling the body when keyboard opens */
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
 }
 
 #app {
@@ -46,6 +50,8 @@ html, body {
   max-width: 480px;
   margin: 0 auto;
   position: relative;
+  /* Use dvh (dynamic viewport height) so keyboard shrinks the app correctly */
+  height: 100dvh;
 }
 
 /* ===== VIEWS ===== */
@@ -56,6 +62,7 @@ html, body {
   position: absolute;
   inset: 0;
   bottom: calc(var(--nav-h) + var(--safe-bottom));
+  overflow: hidden;
 }
 .view.active {
   display: flex;
@@ -66,6 +73,19 @@ html, body {
   overflow-y: auto;
   padding: 16px 16px calc(16px + var(--safe-bottom));
   -webkit-overflow-scrolling: touch;
+}
+
+/* Extra Platz damit der sticky Speichern-Button immer erreichbar ist */
+#view-log .view-content {
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+
+/* Klebt immer am unteren Rand des scrollbaren Bereichs */
+.log-save-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 4px;
+  background: linear-gradient(to bottom, transparent, var(--bg) 30%);
 }
 
 /* ===== TOPBAR ===== */
@@ -723,3 +743,60 @@ select {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ===== CALENDAR ===== */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-dow {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cal-day.empty {
+  cursor: default;
+}
+.cal-day.trained {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--green);
+  font-weight: 700;
+}
+.cal-day.today {
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+.cal-day.today.trained {
+  border-color: var(--green);
+}
+.cal-day.selected {
+  background: var(--accent);
+  color: white;
+}
+.cal-day.trained.selected {
+  background: var(--green);
+  color: white;
+}
+.cal-day:not(.empty):hover {
+  background: var(--bg3);
+}
+.cal-day.trained:not(.selected):hover {
+  background: rgba(34, 197, 94, 0.35);
+}
